@@ -74,8 +74,11 @@ function main_menu() {
 
 # 下载并启动矿机
 function download_and_run_miner() {
+    # 设置固定的下载地址
+    URL="https://github.com/Project-InitVerse/miner/releases/download/v1.0.0/iniminer-linux-x64"
+
     # 下载文件
-    echo "Downloading file..."
+    echo "正在下载矿机..."
     wget -O $TARGET_FILE $URL
 
     # 检查下载是否成功
