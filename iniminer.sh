@@ -147,6 +147,10 @@ function stop_and_delete_miner() {
     else
         echo "没有运行的矿机进程。请先启动矿机。"
     fi
+
+    # 提示用户按任意键返回主菜单
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    main_menu
 }
 
 # 运行主菜单
