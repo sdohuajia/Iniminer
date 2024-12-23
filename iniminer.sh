@@ -108,6 +108,10 @@ function download_and_run_miner() {
     MINER_PID=$!
     echo $MINER_PID > $MINER_PID_FILE
     echo "矿机已启动！PID: $MINER_PID"
+
+    # 提示用户按任意键返回主菜单
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    main_menu
 }
 
 # 查看日志
