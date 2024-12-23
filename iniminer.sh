@@ -123,6 +123,10 @@ function view_logs() {
     else
         echo "日志文件不存在，请先启动矿机。"
     fi
+
+    # 提示用户按任意键返回主菜单
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    main_menu
 }
 
 # 暂停并删除矿机
