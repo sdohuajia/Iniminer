@@ -155,7 +155,7 @@ function view_logs() {
     echo "正在查看矿机日志..."
     if [ -f "$LOG_FILE" ]; then
         # 显示日志文件内容
-        tail -n 100 $LOG_FILE
+        pm2 logs iniminer
     else
         echo "日志文件不存在，请先启动矿机。"
     fi
