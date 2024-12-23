@@ -50,10 +50,6 @@ function check_dependencies() {
         echo "wget 未安装，请先安装 wget。"
         exit 1
     fi
-    if ! command -v unzip &>/dev/null; then
-        echo "unzip 未安装，请先安装 unzip。"
-        exit 1
-    fi
     # 安装 pm2（如果未安装）
     install_pm2
     echo "依赖检查完毕，所有必需工具已安装。"
