@@ -97,12 +97,19 @@ function download_and_run_miner() {
     echo "请输入工作名称："
     read WORKER_NAME
 
-    echo "请输入CPU线程数："
+    echo "请输入CPU线程数（默认不设置线程数，直接回车跳过）："
     read CPU_THREADS
 
-    # 启动矿机并将输出重定向到日志文件
-    echo "启动矿机..."
+    # 如果用户没有输入线程数（即按下回车），则不传递 --cpu-devices 参数
+    if [ -z "$CPU_THREADS" ]; then
+    echo "未输入CPU线程数，启动矿机时不指定线程数"
+    # 启动矿机，不带 --cpu-devices 参数
+    $TARGET_FILE --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE &
+    else
+    echo "用户输入的CPU线程数为: $CPU_THREADS"
+    # 启动矿机，并指定 --cpu-devices 参数
     $TARGET_FILE --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" --cpu-devices "$CPU_THREADS" &> $LOG_FILE &
+    fi
 
     # 获取矿机进程的 PID 并保存到文件中
     MINER_PID=$!
