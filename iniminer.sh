@@ -6,6 +6,7 @@ LOG_FILE="$HOME/iniminer/iniminer.log"  # 定义日志文件路径
 TARGET_DIR="$HOME/iniminer"  # 下载到的文件夹
 TARGET_FILE="$TARGET_DIR/iniminer-linux-x64"  # 目标文件名
 MINER_PID_FILE="$HOME/iniminer/miner.pid"  # 存储矿机进程PID的文件
+MINER_NAME="iniminer"  # 用于pm2管理的进程名称
 
 # 检查是否以 root 用户运行脚本
 if [ "$(id -u)" != "0" ]; then
@@ -17,7 +18,32 @@ fi
 # 创建目标文件夹（如果不存在）
 mkdir -p $TARGET_DIR
 
-# 检查依赖（示例：需要 wget 和 unzip）
+# 安装 pm2（如果未安装）
+function install_pm2() {
+    echo "检查 pm2 是否已安装..."
+    if ! command -v pm2 &>/dev/null; then
+        echo "pm2 未安装，正在安装 pm2..."
+        # 安装 pm2
+        if ! command -v npm &>/dev/null; then
+            echo "npm 未安装，正在安装 npm..."
+            # 安装 npm（Node.js 包管理器）
+            if [ -f /etc/debian_version ]; then
+                sudo apt update && sudo apt install -y nodejs npm
+            elif [ -f /etc/redhat-release ]; then
+                sudo yum install -y nodejs npm
+            else
+                echo "不支持的操作系统，无法自动安装 npm。请手动安装 npm。"
+                exit 1
+            fi
+        fi
+        # 安装 pm2
+        sudo npm install -g pm2
+    else
+        echo "pm2 已安装，继续运行..."
+    fi
+}
+
+# 检查依赖
 function check_dependencies() {
     echo "检查依赖..."
     if ! command -v wget &>/dev/null; then
@@ -28,6 +54,8 @@ function check_dependencies() {
         echo "unzip 未安装，请先安装 unzip。"
         exit 1
     fi
+    # 安装 pm2（如果未安装）
+    install_pm2
     echo "依赖检查完毕，所有必需工具已安装。"
 }
 
@@ -48,8 +76,9 @@ function main_menu() {
         echo "1) 下载并运行矿机"
         echo "2) 查看日志"
         echo "3) 暂停并删除矿机"
-        echo "4) 退出"
-        read -p "请输入选项 [1-4]: " OPTION
+        echo "4) 重启矿机"
+        echo "5) 退出"
+        read -p "请输入选项 [1-5]: " OPTION
 
         case $OPTION in
             1)
@@ -62,6 +91,9 @@ function main_menu() {
                 stop_and_delete_miner
                 ;;
             4)
+                restart_miner
+                ;;
+            5)
                 echo "退出脚本。"
                 exit 0
                 ;;
@@ -102,19 +134,16 @@ function download_and_run_miner() {
 
     # 如果用户没有输入线程数（即按下回车），则不传递 --cpu-devices 参数
     if [ -z "$CPU_THREADS" ]; then
-    echo "未输入CPU线程数，启动矿机时不指定线程数"
-    # 启动矿机，不带 --cpu-devices 参数
-    $TARGET_FILE --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE &
+        echo "未输入CPU线程数，启动矿机时不指定线程数"
+        # 使用 pm2 启动矿机
+        pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE
     else
-    echo "用户输入的CPU线程数为: $CPU_THREADS"
-    # 启动矿机，并指定 --cpu-devices 参数
-    $TARGET_FILE --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" --cpu-devices "$CPU_THREADS" &> $LOG_FILE &
+        echo "用户输入的CPU线程数为: $CPU_THREADS"
+        # 使用 pm2 启动矿机，指定 --cpu-devices 参数
+        pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" --cpu-devices "$CPU_THREADS" &> $LOG_FILE
     fi
 
-    # 获取矿机进程的 PID 并保存到文件中
-    MINER_PID=$!
-    echo $MINER_PID > $MINER_PID_FILE
-    echo "矿机已启动！PID: $MINER_PID"
+    echo "矿机已启动！"
 
     # 提示用户按任意键返回主菜单
     read -n 1 -s -r -p "按任意键返回主菜单..."
@@ -138,23 +167,35 @@ function view_logs() {
 
 # 暂停并删除矿机
 function stop_and_delete_miner() {
-    if [ -f "$MINER_PID_FILE" ]; then
-        # 读取矿机的 PID
-        MINER_PID=$(cat $MINER_PID_FILE)
-
+    if pm2 pid $MINER_NAME &>/dev/null; then
         # 停止矿机进程
-        echo "正在停止矿机进程 (PID: $MINER_PID)..."
-        kill $MINER_PID
+        echo "正在停止矿机进程..."
+        pm2 stop $MINER_NAME
 
-        # 等待进程停止
-        wait $MINER_PID 2>/dev/null
-        echo "矿机进程已停止。"
+        # 删除矿机进程
+        echo "正在删除矿机进程..."
+        pm2 delete $MINER_NAME
 
-        # 删除矿机文件和日志文件
-        echo "正在删除矿机文件和日志文件..."
-        rm -f $TARGET_FILE $LOG_FILE $MINER_PID_FILE
+        # 删除日志文件
+        echo "正在删除日志文件..."
+        rm -f $LOG_FILE
 
         echo "矿机已删除。"
+    else
+        echo "没有运行的矿机进程。请先启动矿机。"
+    fi
+
+    # 提示用户按任意键返回主菜单
+    read -n 1 -s -r -p "按任意键返回主菜单..."
+    main_menu
+}
+
+# 重启矿机
+function restart_miner() {
+    if pm2 pid $MINER_NAME &>/dev/null; then
+        # 重启矿机进程
+        echo "正在重启矿机进程..."
+        pm2 restart $MINER_NAME
     else
         echo "没有运行的矿机进程。请先启动矿机。"
     fi
