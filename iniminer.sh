@@ -104,7 +104,14 @@ function main_menu() {
 function download_and_run_miner() {
     # 设置固定的下载地址
     URL="https://github.com/Project-InitVerse/miner/releases/download/v1.0.0/iniminer-linux-x64"
+    TARGET_FILE="iniminer-linux-x64"  # 目标文件名
 
+    # 检查目标文件是否存在，如果存在则删除
+    if [ -f "$TARGET_FILE" ]; then
+        echo "目标文件 $TARGET_FILE 已存在，正在删除..."
+        rm -f "$TARGET_FILE"
+    fi
+    
     # 下载文件
     echo "正在下载矿机..."
     wget -O $TARGET_FILE $URL
