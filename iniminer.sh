@@ -130,13 +130,20 @@ function download_and_run_miner() {
 
     # 如果用户没有输入线程数（即按下回车），则不传递 --cpu-devices 参数
     if [ -z "$CPU_THREADS" ]; then
-        echo "未输入CPU线程数，启动矿机时不指定线程数"
-        # 使用 pm2 启动矿机
-        pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE
+    echo "未输入CPU线程数，启动矿机时不指定线程数"
+    # 使用 pm2 启动矿机
+    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE
     else
-        echo "用户输入的CPU线程数为: $CPU_THREADS"
-        # 使用 pm2 启动矿机，指定 --cpu-devices 参数
-        pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" --cpu-devices "$CPU_THREADS" &> $LOG_FILE
+    echo "用户输入的CPU线程数为: $CPU_THREADS"
+
+    # 生成 --cpu-devices 参数
+    CPU_DEVICES=""
+    for ((i=1; i<=$CPU_THREADS; i++)); do
+        CPU_DEVICES="$CPU_DEVICES --cpu-devices $i"
+    done
+
+    # 使用 pm2 启动矿机，传递生成的 --cpu-devices 参数
+    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" $CPU_DEVICES &> $LOG_FILE
     fi
 
     echo "矿机已启动！"
