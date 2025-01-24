@@ -151,7 +151,7 @@ function download_and_run_miner() {
     done
 
     # 使用 pm2 启动矿机，传递生成的 --cpu-devices 参数
-    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" $CPU_DEVICES &> $LOG_FILE
+    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-a.yatespool.com:31588" $CPU_DEVICES &> $LOG_FILE
     fi
 
     echo "矿机已启动！"
