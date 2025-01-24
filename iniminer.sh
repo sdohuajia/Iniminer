@@ -139,7 +139,8 @@ function download_and_run_miner() {
     if [ -z "$CPU_THREADS" ]; then
     echo "未输入CPU线程数，启动矿机时不指定线程数"
     # 使用 pm2 启动矿机
-    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-core-testnet.inichain.com:32672" &> $LOG_FILE
+    pm2 start $TARGET_FILE --name $MINER_NAME -- --pool "stratum+tcp://$WALLET_ADDRESS.$WORKER_NAME@pool-a.yatespool.com:31588" &> $LOG_FILE
+    
     else
     echo "用户输入的CPU线程数为: $CPU_THREADS"
 
